@@ -1,100 +1,101 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useCounterStore } from '@/store/counter'
-import { Minus, Plus, RefreshCcw } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { Hand, HandMetal, HandScissors, History, RefreshCcw } from 'lucide-react'
 
-/**
- * @description 这只是个示例页面，你可以随意修改这个页面或进行全面重构
- */
-export default function StartTemplatePage() {
-	const { count, increment, decrement, reset } = useCounterStore()
-	const [isLoading, setIsLoading] = useState(true)
+const options = [
+	{ label: '剪刀', value: 'scissors', icon: <HandScissors className="w-5 h-5 mr-1" /> },
+	{ label: '石头', value: 'rock', icon: <HandMetal className="w-5 h-5 mr-1" /> },
+	{ label: '布', value: 'paper', icon: <Hand className="w-5 h-5 mr-1" /> },
+] as const
 
-	useEffect(() => {
-		// 确保loading至少显示200毫秒
-		const timer = setTimeout(() => {
-			setIsLoading(false)
-		}, 200)
+type OptionValue = typeof options[number]['value']
+type Result = '你赢了！' | '你输了！' | '平局' | ''
+interface HistoryItem {
+	user: OptionValue
+	computer: OptionValue
+	res: Result
+}
 
-		return () => clearTimeout(timer)
-	}, [])
-
-	const handleIncrement = () => {
-		const success = increment()
-		if (!success) {
-			toast.error('已达到最大值 (10)')
-		}
+function getResult(user: OptionValue, computer: OptionValue): Result {
+	if (user === computer) return '平局'
+	if (
+		(user === 'scissors' && computer === 'paper') ||
+		(user === 'rock' && computer === 'scissors') ||
+		(user === 'paper' && computer === 'rock')
+	) {
+		return '你赢了！'
 	}
+	return '你输了！'
+}
 
-	const handleDecrement = () => {
-		const success = decrement()
-		if (!success) {
-			toast.error('已达到最小值 (0)')
-		}
+export default function Home() {
+	const [userPick, setUserPick] = useState<OptionValue | null>(null)
+	const [computerPick, setComputerPick] = useState<OptionValue | null>(null)
+	const [result, setResult] = useState<Result>('')
+	const [history, setHistory] = useState<HistoryItem[]>([])
+
+	const handlePick = (pick: OptionValue) => {
+		const computer = options[Math.floor(Math.random() * 3)].value as OptionValue
+		setUserPick(pick)
+		setComputerPick(computer)
+		const res = getResult(pick, computer)
+		setResult(res)
+		setHistory([{ user: pick, computer, res }, ...history.slice(0, 9)])
+		toast(res)
 	}
 
 	const handleReset = () => {
-		reset()
-		toast.success('计数器已重置为 0')
+		setUserPick(null)
+		setComputerPick(null)
+		setResult('')
+		setHistory([])
+		toast.success('已重置')
 	}
+
+	const getLabel = (val: OptionValue | null) => options.find(o => o.value === val)?.label || ''
+	const getIcon = (val: OptionValue | null) => options.find(o => o.value === val)?.icon || null
 
 	return (
 		<main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-8">
-			
-			<div className="space-y-8 text-center">
-				<h1 className="font-medium text-2xl text-gray-900">
-
-					初始化模板
-				</h1>
-				
-				<div className="space-y-4">
-					<div className="flex h-16 items-center justify-center font-bold text-4xl text-gray-900">
-						{isLoading ? (
-							<Skeleton className="h-8 w-8 bg-gray-200" />
-						) : (
-							count
-						)}
+			<div className="w-full max-w-md bg-white rounded-xl shadow p-6 space-y-6">
+				<h1 className="text-2xl font-bold text-center mb-2">剪刀石头布小游戏</h1>
+				<div className="flex justify-center gap-4 mb-4">
+					{options.map(opt => (
+						<Button key={opt.value} onClick={() => handlePick(opt.value)} variant="outline" size="lg">
+							{opt.icon}{opt.label}
+						</Button>
+					))}
+				</div>
+				<div className="flex justify-between items-center mb-2">
+					<div>
+						<span className="font-semibold">你：</span>
+						{userPick ? <span className="inline-flex items-center">{getIcon(userPick)}{getLabel(userPick)}</span> : '未出'}
 					</div>
-					
-					<div className="flex justify-center gap-4">
-						<Button 
-							onClick={handleDecrement}
-							variant="outline"
-							disabled={count === 0 || isLoading}
-						>
-							<Minus className="h-4 w-4 text-gray-600" />
-						</Button>
-						
-						<Button 
-							onClick={handleReset}
-							variant="outline"
-							disabled={isLoading}
-						>
-							<RefreshCcw className="h-4 w-4 text-gray-600" />
-						</Button>
-						
-						<Button 
-							onClick={handleIncrement}
-							variant="outline"
-							disabled={count === 10 || isLoading}
-						>
-							<Plus className="h-4 w-4 text-gray-600" />
-						</Button>
-					</div>
-					
-					<div className="flex flex-col gap-2">
-						<p className="text-gray-600 text-sm">
-							玩玩看 👆 这只是个演示
-						</p>
-						<p className="text-gray-500 text-sm">
-							范围: 0-10 | 自动保存到浏览器本地
-						</p>
+					<div>
+						<span className="font-semibold">电脑：</span>
+						{computerPick ? <span className="inline-flex items-center">{getIcon(computerPick)}{getLabel(computerPick)}</span> : '未出'}
 					</div>
 				</div>
+				<div className="text-center text-lg font-medium min-h-[28px]">
+					{result && <span>{result}</span>}
+				</div>
+				<div className="flex justify-between items-center mt-4">
+					<div className="flex items-center text-gray-500"><History className="w-4 h-4 mr-1" />历史记录</div>
+					<Button onClick={handleReset} size="sm" variant="ghost"><RefreshCcw className="w-4 h-4 mr-1" />重置</Button>
+				</div>
+				<ul className="mt-2 max-h-40 overflow-y-auto text-sm">
+					{history.length === 0 && <li className="text-gray-400 text-center">暂无记录</li>}
+					{history.map((item, idx) => (
+						<li key={idx} className="flex justify-between py-1 border-b last:border-b-0">
+							<span className="inline-flex items-center">你: {getIcon(item.user)}{getLabel(item.user)}</span>
+							<span className="inline-flex items-center">电脑: {getIcon(item.computer)}{getLabel(item.computer)}</span>
+							<span>{item.res}</span>
+						</li>
+					))}
+				</ul>
 			</div>
 		</main>
 	)
