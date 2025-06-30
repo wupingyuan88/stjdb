@@ -55,8 +55,14 @@ export default function Home() {
 		toast.success('已重置')
 	}
 
-	const getLabel = (val: OptionValue | null) => options.find(o => o.value === val)?.label || ''
-	const getIcon = (val: OptionValue | null) => options.find(o => o.value === val)?.icon || null
+	const getLabel = (val: OptionValue | null) => {
+		const found = options.find(o => o.value === val)
+		return found ? found.label : ''
+	}
+	const getIcon = (val: OptionValue | null) => {
+		const found = options.find(o => o.value === val)
+		return found ? found.icon : null
+	}
 
 	return (
 		<main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-8">
